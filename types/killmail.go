@@ -47,6 +47,6 @@ type ZkbData struct {
 type AbbreviatedKillmail struct {
 	SystemName       string
 	ShipDestroyed    string
-	DroppedItemValue string
+	DroppedItemValue float64
 	Time             time.Time
 }

@@ -22,7 +22,7 @@ func ProcessKillmailFeed(feed chan types.Killmail, wg sync.WaitGroup) {
 }
 
 // Takes a list of items from the killmail and returns the ISK value of the dropped items.
-func GetLootValue(items []types.ZkbItem) string {
+func GetLootValue(items []types.ZkbItem) float64 {
 	panic(errors.New("GetLootValue is not implemented"))
 }
 
