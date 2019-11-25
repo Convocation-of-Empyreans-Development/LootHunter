@@ -13,6 +13,7 @@ import (
 var ZkillboardWebsocketUrl = url.URL{Scheme: "wss", Host: "zkillboard.com:2096"}
 var MaxPayloadSize = 1048576
 
+// Connect to the Zkillboard websocket API.
 func CreateZkillWebsocket() websocket.Conn {
 	connection, _, err := websocket.DefaultDialer.Dial(ZkillboardWebsocketUrl.String(), nil)
 	if err != nil {
@@ -22,6 +23,7 @@ func CreateZkillWebsocket() websocket.Conn {
 	return *connection
 }
 
+// Subscribe to the killstream meesage queue given a websocket with access to the Zkillboard API.
 func SubscribeToKillfeed(ws websocket.Conn) {
 	err := ws.WriteMessage(websocket.TextMessage, []byte(`{"action":"sub", "channel":"killstream"}`))
 	if err != nil {
@@ -30,6 +32,10 @@ func SubscribeToKillfeed(ws websocket.Conn) {
 	fmt.Println("[+] successfully subscribed to killfeed")
 }
 
+// Repeatedly reads messages from the Zkillboard websocket and unmarshals the raw JSON data into structures for
+// further processing. Detects duplicate killmails which are sometimes sent in batches over the queue, excluding
+// these from processing.
+// Only intended for use as a goroutine.
 func ZkillWebsocketLoop(ws websocket.Conn, feed chan types.Killmail, wg sync.WaitGroup) {
 	defer wg.Done()
 
