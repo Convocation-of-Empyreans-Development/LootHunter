@@ -2,36 +2,31 @@ package utils
 
 import (
 	"LootHunter/types"
-	_ "LootHunter/ws"
-	"errors"
+	"fmt"
 	"sync"
 )
 
 // Processes and distills the raw killmail data into only the required elements for other use in the application.
-func ProcessKillmailFeed(feed chan types.Killmail, wg sync.WaitGroup) {
+func ProcessKillmailFeed(feed chan types.Killmail, idResolveQueue types.IDResolverChannels, appraisalQueue types.AppraisalQueue, wg sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		killmail := <-feed
-		_ = types.AbbreviatedKillmail{
-			SystemName:       ResolveSystemID(killmail.SolarSystemID),
-			ShipDestroyed:    ResolveShip(killmail.Victim.ShipTypeID),
-			DroppedItemValue: GetLootValue(killmail.Victim.Items),
+		shortKillmail := types.AbbreviatedKillmail{
+			SystemName:       ResolveItemID(killmail.SolarSystemID, idResolveQueue),
+			ShipDestroyed:    ResolveItemID(killmail.Victim.ShipTypeID, idResolveQueue),
+			DroppedItemValue: GetLootValue(killmail.Victim.Items, idResolveQueue, appraisalQueue),
 			Time:             killmail.Time,
 		}
+		fmt.Printf("%+v\n", shortKillmail)
 	}
 }
 
 // Takes a list of items from the killmail and returns the ISK value of the dropped items.
-func GetLootValue(items []types.ZkbItem) float64 {
-	panic(errors.New("GetLootValue is not implemented"))
-}
-
-// Resolves the item ID of the ship lost in the killmail into the name of the ship.
-func ResolveShip(id int) string {
-	panic(errors.New("ResolveShip is not implemented"))
-}
-
-// Resolves the system ID from which the killmail was generated to the name of the system.
-func ResolveSystemID(systemID int) string {
-	panic(errors.New("ResolveSystemID is not implemented"))
+func GetLootValue(items []types.ZkbItem, idResolveQueue types.IDResolverChannels, appraisalQueue types.AppraisalQueue) float64 {
+	itemList := GenerateItemList(items, idResolveQueue)
+	if itemList == "" {
+		return 0
+	}
+	appraisalQueue.ItemLists <- itemList
+	return (<-appraisalQueue.Appraisals).Data.Totals.Sell
 }

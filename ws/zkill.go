@@ -2,7 +2,6 @@ package ws
 
 import (
 	"LootHunter/types"
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/url"
@@ -11,7 +10,6 @@ import (
 )
 
 var ZkillboardWebsocketUrl = url.URL{Scheme: "wss", Host: "zkillboard.com:2096"}
-var MaxPayloadSize = 1048576
 
 // Connect to the Zkillboard websocket API.
 func CreateZkillWebsocket() websocket.Conn {
@@ -38,17 +36,10 @@ func SubscribeToKillfeed(ws websocket.Conn) {
 // Only intended for use as a goroutine.
 func ZkillWebsocketLoop(ws websocket.Conn, feed chan types.Killmail, wg sync.WaitGroup) {
 	defer wg.Done()
-
-	var data = make([]byte, MaxPayloadSize)
 	var latestKill types.Killmail
 	var hashesSeen = make(map[string]bool)
 	for {
-		_, packet, err := ws.NextReader()
-		if err != nil {
-			panic(err)
-		}
-		bytesRead, _ := packet.Read(data)
-		err = json.Unmarshal(data[:bytesRead], &latestKill)
+		err := ws.ReadJSON(&latestKill)
 		if err != nil {
 			panic(err)
 		}
